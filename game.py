@@ -105,5 +105,12 @@ def main():
     while game.turn_num <= 9:
         game.turn()
 
+    answer = raw_input("Game Over; the result is a draw! Would you like to play again? Y/N: ").upper()
+    while answer is not 'Y' or 'N':
+        answer = raw_input("Invalid input, please input yes with a 'Y' or no with an 'N': ")
+    if answer is 'Y':
+        main()
+    else:
+        exit(0)
 
 main()
