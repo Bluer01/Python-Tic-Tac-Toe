@@ -16,12 +16,10 @@ class Player:
 class Game:
     """This handles the board and __game__ logic"""
     def __init__(self):
-        self.legal_num = [1, 2, 3]
-        self.legal_moves = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-        self.ai_start_moves = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+        self.available_grids = [True for i in range(0, 9)]
         self.turn_num = 1
         self.player_turn = random.choice([1, 2])
-        self.board = [' '] * 9
+        self.board = [' ' for i in range(0, 9)]
         self.ai_enabled = self.ai_prompt()
         self.player_one, self.player_two = Player(), Player()
         self.players = (self.player_one, self.player_two)
@@ -34,6 +32,12 @@ class Game:
               '---|---|---\n' +
               ' ' + self.board[6] + ' | ' + self.board[7] + ' | ' + self.board[8] + ' \n')
 
+    def is_free(self, chosen_x, chosen_y):
+        __move_position__ = ((chosen_x - 1) * 3) + (chosen_y - 1)
+        if self.available_grids[__move_position__]:
+            return True
+        return False
+
     def ai_prompt(self):
         """Asks the user if they want to player against AI"""
         while True:
@@ -42,6 +46,12 @@ class Game:
                 return True
             elif ai_answer in ('n', 'no', 'False', '0'):
                 return False
+
+    def swap_player_turn(self):
+        self.player_turn = abs(self.player_turn - 3)
+
+    def make_move(self, symbol, move):
+        self.board[move_position] = self.player_one.symbol
 
     def decide_symbols(self):
         """Determines the player turn order"""
@@ -68,54 +78,41 @@ class Game:
     def turn(self):
         """Player takes a turn"""
         #   self.player_query()
-
+        move_position = None
         if self.player_turn == 1:
+            while True:
+                # Asks the player where they would like to move
+                row_prompt = "Please choose row 1 (top), 2 (middle) or 3 (bottom) for your move: "
+                move_row = int(input(row_prompt))
+                while move_row not in range(1, 4):
+                    row_prompt = "Please provide a legal row value (1 (top), 2 (middle), 3 (bottom)): "
+                    move_row = int(input(row_prompt))
 
-            # Asks the player where they would like to move
-            move_row = int(input(
-                "Please choose the row (1 (top), 2 (middle) or 3 (bottom)) for your move: "))
-            while move_row not in self.legal_num:
-                move_row = int(input(
-                    "Please provide a legal row value (1 (top), 2 (middle), 3 (bottom)): "))
+                col_prompt = "Please choose column 1 (left), 2 (middle) or 3 (right) for your move: "
+                move_col = int(input(col_prompt))
+                while move_col not in range(1, 4):
+                    col_prompt = "Please choose a legal column (1 (left), 2 (middle), 3 (right)): "
+                    move_col = int(input(col_prompt))
 
-            move_col = int(input(
-                "Please choose the column (1 (left), 2 (middle) or 3 (right)) for your move: "))
-            while move_col not in self.legal_num:
-                move_col = int(input(
-                    "Please provide a legal column value (1 (left), 2 (middle), 3 (right)): "))
+                move_position = ((move_row - 1) * 3) + (move_col - 1)
 
-            move_position = ((move_row - 1) * 3) + (move_col - 1)
+                while not(self.is_free(move_position)):
+                    error_message = "Grid already taken; please try again with a different grid.\n"
+                    raise IllegalMoveError(error_message)
+                
+                break
+            assert move_position != None
+            self.make_move(self.player_one.symbol, move_position)
 
-            while move_position not in self.legal_moves:
-
-                print("Move was not legal, please try again with a different move.\n")
-
-                move_row = int(input(
-                    "Please choose the row (1 (top), 2 (middle) or 3 (middle)) for your move: "))
-                while move_row not in self.legal_num:
-                    move_row = int(input(
-                        "Please provide a legal row value (1 (top), 2 (middle), 3 (bottom)): "))
-
-                move_col = int(
-                    input("Choose the column (1 (left), 2 (middle) or 3 (right)) for your move: "))
-
-                while move_col not in self.legal_num:
-                    move_col = int(input(
-                        "Please provide a legal column value (1 (left), 2 (middle), 3 (right)): "))
-
-            move_position = ((move_row - 1) * 3) + (move_col - 1)
-
-            self.board[move_position] = self.player_one.symbol
-
-            self.player_turn = 'Player 2'
+            self.swap_player_turn()
 
         else:
             print("Player 2 turn: \n")
-            move_position = random.choice(self.legal_moves)
+            move_position = random.choice(self.is_legal)
             self.board[move_position] = self.player_two.symbol
-            self.player_turn = 'Player 1'
+            self.swap_player_turn()
 
-        self.legal_moves.remove(move_position)
+        self.is_legal.remove(move_position)
         self.turn_num += 1
 
         self.draw_board()
@@ -123,9 +120,13 @@ class Game:
         return
 
 
+def IllegalMoveError(Exception):
+    pass
+
 def main():
     """Main thread of the gaaaaaaaaaaaame"""
     __game__ = Game()  # Creates the __game__ object
+    __game__.decide_symbols()
     __game__.draw_board()  # Draws the board
 
     while __game__.turn_num <= 9:
@@ -140,3 +141,5 @@ def main():
         main()
     else:
         exit(0)
+
+main()
