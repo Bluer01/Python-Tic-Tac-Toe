@@ -10,8 +10,27 @@ import random
 class Player:
     """Handles the player info"""
     def __init__(self):
-        self.name = ""
+        self.name = self.name_prompt()
         self.symbol = ""
+
+    def name_prompt(self):
+        if self.__name__ == "player_one":
+            name = input("Please choose player 1 name (Default: Player 1): ")
+            if name == "":
+                return "Player 1"
+        else:
+            name = input("Please choose player 2 name (Default: Player 2): ")
+            if name == "":
+                return "Player 2"        
+        return name
+
+    def symbol_prompt(self):
+        prompt_text = "{0} will go first; would you like to be 'x' or 'o'?: ".format(self.name)
+        self.symbol = input(prompt_text).lower()
+            while self.symbol not in ['o', 'x']:
+                symbol_error = "Symbol not valid, please enter a valid symbol ('x' or 'o'): "
+                self.symbol = input(symbol_error)).lower()
+
 
 class Game:
     """This handles the board and __game__ logic"""
@@ -57,11 +76,7 @@ class Game:
         """Determines the player turn order"""
 
         if self.player_turn == 1:
-            self.player_one.symbol = str(input(
-                "Player 1 will go first; would you like to be 'x' or 'o'?: ")).lower()
-            while self.player_one.symbol not in ['o', 'x']:
-                self.player_one.symbol = str(
-                    input("Symbol not valid, please enter a valid symbol ('x' or 'o'): ")).lower()
+            self.player_one.symbol_prompt()
             if self.player_one.symbol is 'o':
                 self.player_two.symbol = 'x'
             else:
@@ -72,53 +87,60 @@ class Game:
                 self.player_two.symbol = 'x'
             else:
                 self.player_two.symbol = 'o'
-            print('Player 1 will go second; your symbol is ' + self.player_one.symbol)
-            print('Player 2 is ' + self.player_two.symbol)
+            firstplayer = (self.player_one.name, self.player_one.symbol)
+            print("{0} will go second; your symbol is {1}".format(firstplayer[0], firstplayer[1]))
+            print("{0} is {1}".format(self.player_two.name, self.player_two.symbol))
+
+    def ask_move(self):
+        """Asks for the move row, column, and then returns them"""
+        row_prompt = "Please choose row 1(top), 2(middle) or 3(bottom) for your move: "
+        move_row = int(input(row_prompt))
+        while move_row not in range(1, 4):
+            row_prompt = "Please provide legal row (1 (top), 2 (middle), 3 (bottom)): "
+            move_row = int(input(row_prompt))
+
+        col_prompt = "Please choose column 1(left), 2(middle) or 3(right) for your move: "
+        move_col = int(input(col_prompt))
+        while move_col not in range(1, 4):
+            col_prompt = "Please choose legal column (1 (left), 2 (middle), 3 (right)): "
+            move_col = int(input(col_prompt))
+
+        move_position = ((move_row - 1) * 3) + (move_col - 1)
+
+        if not(self.is_free(move_position)):
+            error_msg = "Grid already taken; please try again with a different grid.\n"
+            raise IllegalMoveError(error_msg)
+        
+        return move_position
 
     def turn(self):
         """Player takes a turn"""
-        #   self.player_query()
         move_position = None
         if self.player_turn == 1:
-            while True:
-                # Asks the player where they would like to move
-                row_prompt = "Please choose row 1 (top), 2 (middle) or 3 (bottom) for your move: "
-                move_row = int(input(row_prompt))
-                while move_row not in range(1, 4):
-                    row_prompt = "Please provide a legal row value (1 (top), 2 (middle), 3 (bottom)): "
-                    move_row = int(input(row_prompt))
-
-                col_prompt = "Please choose column 1 (left), 2 (middle) or 3 (right) for your move: "
-                move_col = int(input(col_prompt))
-                while move_col not in range(1, 4):
-                    col_prompt = "Please choose a legal column (1 (left), 2 (middle), 3 (right)): "
-                    move_col = int(input(col_prompt))
-
-                move_position = ((move_row - 1) * 3) + (move_col - 1)
-
-                while not(self.is_free(move_position)):
-                    error_message = "Grid already taken; please try again with a different grid.\n"
-                    raise IllegalMoveError(error_message)
-                
-                break
-            assert move_position != None
+            while move_position == None:
+                move_position = ask_move()
             self.make_move(self.player_one.symbol, move_position)
-
-            self.swap_player_turn()
-
-        else:
+        elif self.ai_enabled:
+            #TODO: This bit
             print("Player 2 turn: \n")
-            move_position = random.choice(self.is_legal)
+            move_position = random.choice(self.available_grids)
             self.board[move_position] = self.player_two.symbol
-            self.swap_player_turn()
 
-        self.is_legal.remove(move_position)
+        self.swap_player_turn()
+        self.available_grids.remove(move_position)
         self.turn_num += 1
-
         self.draw_board()
 
-        return
-
+    def game_over(self):
+        game_over_msg = "Game Over; the result is a draw! Would you like to play again? Y/N: "
+        answer = input(game_over_msg).upper()
+        while answer is not 'Y' or 'N':
+            wrong_input_msg = "Invalid input, please input yes with a 'Y' or no with an 'N': "
+            answer = input(wrong_input_msg).upper()
+        if answer is 'Y':
+            main()
+        else:
+            exit(0)
 
 def IllegalMoveError(Exception):
     pass
@@ -131,15 +153,5 @@ def main():
 
     while __game__.turn_num <= 9:
         __game__.turn()
-
-    answer = input(
-        "__game__ Over; the result is a draw! Would you like to play again? Y/N: ").upper()
-    while answer is not 'Y' or 'N':
-        answer = input(
-            "Invalid input, please input yes with a 'Y' or no with an 'N': ")
-    if answer is 'Y':
-        main()
-    else:
-        exit(0)
 
 main()
