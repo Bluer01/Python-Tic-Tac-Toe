@@ -10,26 +10,28 @@ import random
 class Player:
     """Handles the player info"""
     def __init__(self):
-        self.name = self.name_prompt()
+        self.name = ""
         self.symbol = ""
 
     def name_prompt(self):
-        if self.__name__ == "player_one":
+        """Asks the player(s) for the names"""
+        if self.name == "player_one":
             name = input("Please choose player 1 name (Default: Player 1): ")
             if name == "":
                 return "Player 1"
         else:
             name = input("Please choose player 2 name (Default: Player 2): ")
             if name == "":
-                return "Player 2"        
+                return "Player 2"
         return name
 
     def symbol_prompt(self):
+        """Asks the player(s) for the symbols"""
         prompt_text = "{0} will go first; would you like to be 'x' or 'o'?: ".format(self.name)
         self.symbol = input(prompt_text).lower()
-            while self.symbol not in ['o', 'x']:
-                symbol_error = "Symbol not valid, please enter a valid symbol ('x' or 'o'): "
-                self.symbol = input(symbol_error)).lower()
+        while self.symbol not in ['o', 'x']:
+            symbol_error = "Symbol not valid, please enter a valid symbol ('x' or 'o'): "
+            self.symbol = input(symbol_error).lower()
 
 
 class Game:
@@ -38,20 +40,22 @@ class Game:
         self.available_grids = [True for i in range(0, 9)]
         self.turn_num = 1
         self.player_turn = random.choice([1, 2])
-        self.board = [' ' for i in range(0, 9)]
+        self.board = [list(' ' for i in range(3)) for j in range(3)]
         self.ai_enabled = self.ai_prompt()
         self.player_one, self.player_two = Player(), Player()
         self.players = (self.player_one, self.player_two)
 
     def draw_board(self):
         """Prints the __game__ board into the console"""
-        print('\n ' + self.board[0] + ' | ' + self.board[1] + ' | ' + self.board[2] + ' \n' +
-              '---|---|---\n' +
-              ' ' + self.board[3] + ' | ' + self.board[4] + ' | ' + self.board[5] + ' \n' +
-              '---|---|---\n' +
-              ' ' + self.board[6] + ' | ' + self.board[7] + ' | ' + self.board[8] + ' \n')
+        print('\n ' +
+              self.board[0][0] + ' | ' + self.board[0][1] + ' | ' + self.board[0][2] + ' \n' +
+              '---|---|---\n' + ' ' +
+              self.board[1][0] + ' | ' + self.board[1][1] + ' | ' + self.board[1][2] + ' \n' +
+              '---|---|---\n' + ' ' +
+              self.board[2][0] + ' | ' + self.board[2][1] + ' | ' + self.board[2][2] + ' \n')
 
     def is_free(self, chosen_x, chosen_y):
+        """Checks if a grid on the board is free"""
         __move_position__ = ((chosen_x - 1) * 3) + (chosen_y - 1)
         if self.available_grids[__move_position__]:
             return True
@@ -67,10 +71,12 @@ class Game:
                 return False
 
     def swap_player_turn(self):
+        """Swaps the player whose turn is next"""
         self.player_turn = abs(self.player_turn - 3)
 
     def make_move(self, symbol, move):
-        self.board[move_position] = self.player_one.symbol
+        """Performs the chosen move on the board"""
+        self.board[move] = symbol
 
     def decide_symbols(self):
         """Determines the player turn order"""
@@ -107,18 +113,18 @@ class Game:
 
         move_position = ((move_row - 1) * 3) + (move_col - 1)
 
-        if not(self.is_free(move_position)):
+        if not self.is_free(move_row, move_col):
             error_msg = "Grid already taken; please try again with a different grid.\n"
-            raise IllegalMoveError(error_msg)
-        
+            raise illegal_move_error(error_msg)
+
         return move_position
 
     def turn(self):
         """Player takes a turn"""
         move_position = None
         if self.player_turn == 1:
-            while move_position == None:
-                move_position = ask_move()
+            while move_position is None:
+                move_position = self.ask_move()
             self.make_move(self.player_one.symbol, move_position)
         elif self.ai_enabled:
             #TODO: This bit
@@ -132,6 +138,7 @@ class Game:
         self.draw_board()
 
     def game_over(self):
+        """Runs the game over logic"""
         game_over_msg = "Game Over; the result is a draw! Would you like to play again? Y/N: "
         answer = input(game_over_msg).upper()
         while answer is not 'Y' or 'N':
@@ -142,8 +149,9 @@ class Game:
         else:
             exit(0)
 
-def IllegalMoveError(Exception):
-    pass
+def illegal_move_error(exception):
+    """Meant to be called for if a move isn't legal on the board"""
+    print(exception)
 
 def main():
     """Main thread of the gaaaaaaaaaaaame"""
