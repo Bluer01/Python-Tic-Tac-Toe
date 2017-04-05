@@ -3,7 +3,12 @@ The Code
 
 Following is the documentation for the game.py file.
 
+The Main Routine
+================
+
 .. module:: game
+
+.. autofunction:: main
 
 The Player
 ==========
@@ -21,8 +26,3 @@ Exceptions
 ==========
 
 .. autoclass:: IllegalMoveError
-
-The Main Routine
-================
-
-.. autofunction:: main()

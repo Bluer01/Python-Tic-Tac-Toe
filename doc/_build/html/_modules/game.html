@@ -302,14 +302,14 @@
 <span class="sd">        game.decide_symbols()</span>
 <span class="sd">        game.draw_board()</span>
 
-<span class="sd">    After, we then have a while loop that keeps calling for game turns until the grid is full.</span>
+<span class="sd">    After, we then have a while loop that keeps calling for game turns until the grid is full::</span>
+
+<span class="sd">        while game.turn_num &lt;= 9:</span>
+<span class="sd">            game.turn()</span>
 
 <span class="sd">    .. note::</span>
 <span class="sd">        This is only the situation for now until I implement the lose conditions, because with this</span>
 <span class="sd">        we only have a draw condition for the moment, but no lose or win conditions::</span>
-
-<span class="sd">        while game.turn_num &lt;= 9:</span>
-<span class="sd">            game.turn()</span>
 
 <span class="sd">    Finally, once the game is over, we have a conditional function for exiting the game, depending</span>
 <span class="sd">    on if the player decides to restart or quit in the &#39;&#39;game.restart()&#39;&#39; function::</span>
@@ -328,7 +328,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">game</span><span class="o">.</span><span class="n">restart</span><span class="p">():</span>
             <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
     <span class="n">main</span><span class="p">()</span>
 </pre></div>
 
@@ -363,8 +363,8 @@
       &copy;2017, Daniel Bloor.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.3</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
       
     </div>
 
