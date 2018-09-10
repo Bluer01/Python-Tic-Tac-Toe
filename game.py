@@ -3,13 +3,9 @@ This is where the game's main logic is kept. It consists of a player class and t
 """
 import random
 import numpy
-import matplotlib
-import matplotlib.pyplot
 
-#TODO: Add lose condition(s)
 #TODO: See if you can clean up the decide_symbols function more
 #TODO: Decide whether to make the board and players global or inside the game class
-#TODO: Should I even HAVE a game class?
 #TODO: Consider turning the one-line functions into lambdas
 
 class Player:
@@ -23,11 +19,20 @@ class Player:
     symbol : string
         The symbol of the player for use on the grid
     """
-    def __init__(self):
-        self.name = self.name_prompt()
-        self.symbol = self.symbol_prompt()
+    def __init__(self, player_num, ai_player=False, given_symbol=False):
+        self.symbol = None
+        if not(ai_player):
+            self.name = self.name_prompt(player_num)
+           # if not(given_symbol):
+          #      self.symbol = self.symbol_prompt()
+         #   else:
+        #        self.symbol = given_symbol
+        else:
+     #       assert(given_symbol)
+            self.name = "AI"
+      #      self.symbol = given_symbol
 
-    def name_prompt(self):
+    def name_prompt(self, player_num_):
         """
         Asks the player(s) for the names and then returns the name.
 
@@ -36,14 +41,10 @@ class Player:
         name : string
             The name that the player has chosen for themselves
         """
-        if self.name == "player_one":
-            name = input("Please choose player 1 name (Default: Player 1): ")
-            if name == "":
-                return "Player 1"
-        else:
-            name = input("Please choose player 2 name (Default: Player 2): ")
-            if name == "":
-                return "Player 2"
+        assert(player_num_ in [1, 2])
+        name = input(f"Please choose player {player_num_} name (Default: Player {player_num_}): ")
+        if name == "":
+            return f"Player {player_num_}"
         return name
 
     def symbol_prompt(self):
@@ -56,7 +57,7 @@ class Player:
         symbol : string
             The symbol that the player has chosen for themselves
         """
-        prompt_text = "{0} will go first; would you like to be 'x' or 'o'?: ".format(self.name)
+        prompt_text = f"{self.name} will go first; would you like to be 'x' or 'o'?: "
         symbol = input(prompt_text).lower()
         while symbol not in ['o', 'x']:
             symbol_error = "Symbol not valid, please enter a valid symbol ('x' or 'o'): "
@@ -91,8 +92,14 @@ class GameRound:
         self.player_turn = random.choice([1, 2])
         self.board = [list(' ' for i in range(3)) for j in range(3)]
         self.ai_enabled = self.ai_enable_prompt()
-        self.player_one, self.player_two = Player(), Player()
+        self.ai_difficulty = 0
+        self.player_one = Player(1)
+        if not(self.ai_enabled):
+            self.player_two = Player(2)
+        else:
+            self.player_two = Player(2, True)
         self.players = (self.player_one, self.player_two)
+        self.game_condition = 0
 
     def draw_board(self):
         """Prints the game board into the console"""
@@ -141,17 +148,26 @@ class GameRound:
                 self.player_two.symbol = 'x'
             else:
                 self.player_two.symbol = 'o'
-        else:
-            self.player_one.symbol = random.choice(['o', 'x'])
-            if self.player_one.symbol is 'o':
-                self.player_two.symbol = 'x'
+            print(f"{self.player_one.name} chose '{self.player_one.symbol}'")
+            print(f"{self.player_two.name} is '{self.player_two.symbol}'")
+        else:        
+            if not(self.ai_enabled):
+                self.player_two.symbol_prompt()
+                if self.player_two.symbol is 'o':
+                    self.player_one.symbol = 'x'
+                else:
+                    self.player_one.symbol = 'o'
             else:
-                self.player_two.symbol = 'o'
-            firstplayer = (self.player_one.name, self.player_one.symbol)
-            print("{0} will go second; your symbol is {1}".format(firstplayer[0], firstplayer[1]))
-            print("{0} is {1}".format(self.player_two.name, self.player_two.symbol))
+                self.player_one.symbol = random.choice(['o', 'x'])
+                if self.player_one.symbol is 'o':
+                    self.player_two.symbol = 'x'
+                else:
+                    self.player_two.symbol = 'o'
+            print(f"{self.player_one.name} will go second; your symbol is '{self.player_one.symbol}'")
+            print(f"{self.player_two.name} is '{self.player_two.symbol}'")
 
     def ask_move(self):
+
         """
         Asks the player for their move choice (asks for row and column the combines them)
          and then returns them
@@ -185,6 +201,34 @@ class GameRound:
             raise IllegalMoveError(error_msg)
         return move_position
 
+    def condition_update(self, x, y):
+        #check if previous move caused a win on vertical line 
+        if self.board[0][y] == self.board[1][y] == self.board [2][y]:
+            return True
+
+        #check if previous move caused a win on horizontal line 
+        if self.board[x][0] == self.board[x][1] == self.board [x][2]:
+            return True
+
+        #check if previous move was on the main diagonal and caused a win
+        if x == y and self.board[0][0] == self.board[1][1] == self.board [2][2]:
+            return True
+
+        #check if previous move was on the secondary diagonal and caused a win
+        if x + y == 2 and self.board[0][2] == self.board[1][1] == self.board [2][0]:
+            return True
+
+        return False          
+
+    
+    def game_end(self):
+        if self.game_condition == 1:
+            print("You win! congraulations!")
+        elif self.game_condition == 2:
+            print("You lost...but you could win next time! good try!")
+        else:
+            print("It's a draw! Could be worse, eh?")
+
     def turn(self):
         """
         Contains the logic for a turn in a round. The flow can be summed like so::
@@ -206,29 +250,39 @@ class GameRound:
             while move_position is None:
                 move_position = self.ask_move()
             self.make_move(self.player_one.symbol, *move_position)
-        elif self.ai_enabled:
-            #TODO: This bit
-            print("AI turn: \n")
-            move_position = random.choice(self.available_grids)
-            self.board[move_position[0]][move_position[1]] = self.player_two.symbol
+        elif self.player_turn == 2:
+            if self.ai_enabled:
+                #TODO: This bit
+                print("AI turn: \n")
+                while True:
+                    move_position = [random.choice([0, 1, 2]), random.choice([0, 1, 2])]
+                    if self.is_free(*move_position):
+                        break
+                self.board[move_position[0]][move_position[1]] = self.player_two.symbol
+            else:
+                while move_position is None:
+                    move_position = self.ask_move()
+                self.make_move(self.player_two.symbol, *move_position)
+        if self.condition_update(*move_position):
+            self.game_end()
+        else:
+            self.swap_player_turn()
+            self.available_grids.remove(move_position)
+            self.turn_num += 1
+            self.draw_board()
 
-        self.swap_player_turn()
-        self.available_grids.remove(move_position)
-        self.turn_num += 1
-        self.draw_board()
+
 
     def restart(self):
         """
-        States the result and asks the player(s) if they want to play again
+        Asks the player(s) if they want to play again and returns the result as boolean
 
         Returns
         -------
         bool
             It returns True or False based on if the player states they want to play again
         """
-        #TODO: Remember to modify this when the lose conditions are in place
-        game_over_msg = "Game Over; the result is a draw! Would you like to play again? Y/N: "
-        answer = input(game_over_msg).upper()
+        answer = input("Would you like to play again?").upper()
         while answer not in ['Y', 'N']:
             wrong_input_msg = "Invalid input, please input yes with a 'Y' or no with an 'N': "
             answer = input(wrong_input_msg).upper()
@@ -278,11 +332,15 @@ def main():
         game.decide_symbols()
         game.draw_board()  # Draws the board
 
-        while game.turn_num <= 9:
+        while game.turn_num <= 9 and game.game_condition == 0:
             game.turn()
 
+        game.game_end()
+
         if not game.restart():
-            exit(0)
+            break
+
+    exit(0)
 
 if __name__ == '__main__':
     main()
