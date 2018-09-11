@@ -86,8 +86,9 @@ class GameRound:
         Used to store the players, which I keep to use an index over for setting the player turn
     """
     def __init__(self):
-        self.available_grids = [True for i in range(0, 9)]
+        self.available_grids = [list(True for i in range(3)) for j in range(3)]
         self.turn_num = 1
+        self.game_over = False
         # First definition is random, then is later defined through player
         self.player_turn = random.choice([1, 2])
         self.board = [list(' ' for i in range(3)) for j in range(3)]
@@ -99,7 +100,6 @@ class GameRound:
         else:
             self.player_two = Player(2, True)
         self.players = (self.player_one, self.player_two)
-        self.game_condition = 0
 
     def draw_board(self):
         """Prints the game board into the console"""
@@ -112,8 +112,7 @@ class GameRound:
 
     def is_free(self, chosen_x, chosen_y):
         """Checks if a grid on the board is free"""
-        __move_position__ = ((chosen_x - 1) * 3) + (chosen_y - 1)
-        if self.available_grids[__move_position__]:
+        if self.available_grids[chosen_x-1][chosen_y-1]:
             return True
         return False
 
@@ -143,8 +142,8 @@ class GameRound:
         """Determines the player turn order"""
 
         if self.player_turn == 1:
-            self.player_one.symbol_prompt()
-            if self.player_one.symbol is 'o':
+            self.player_one.symbol = self.player_one.symbol_prompt()
+            if self.player_one.symbol == 'o':
                 self.player_two.symbol = 'x'
             else:
                 self.player_two.symbol = 'o'
@@ -153,13 +152,13 @@ class GameRound:
         else:        
             if not(self.ai_enabled):
                 self.player_two.symbol_prompt()
-                if self.player_two.symbol is 'o':
+                if self.player_two.symbol == 'o':
                     self.player_one.symbol = 'x'
                 else:
                     self.player_one.symbol = 'o'
             else:
                 self.player_one.symbol = random.choice(['o', 'x'])
-                if self.player_one.symbol is 'o':
+                if self.player_one.symbol == 'o':
                     self.player_two.symbol = 'x'
                 else:
                     self.player_two.symbol = 'o'
@@ -201,7 +200,7 @@ class GameRound:
             raise IllegalMoveError(error_msg)
         return move_position
 
-    def condition_update(self, x, y):
+    def game_end_check(self, x, y):
         #check if previous move caused a win on vertical line 
         if self.board[0][y] == self.board[1][y] == self.board [2][y]:
             return True
@@ -221,13 +220,20 @@ class GameRound:
         return False          
 
     
-    def game_end(self):
-        if self.game_condition == 1:
-            print("You win! congraulations!")
-        elif self.game_condition == 2:
-            print("You lost...but you could win next time! good try!")
+    def game_end(self, winner):
+        if winner == 1:
+            if self.ai_enabled:
+                print("You won! congratulations!")
+            else:
+                print(f"{self.player_one.name} wins! congratulations!")
+        elif winner == 2:
+            if self.ai_enabled:
+                print("Oh no...you lost!")
+            else:
+                print(f"{self.player_two.name} wins! congratulations!")
         else:
-            print("It's a draw! Could be worse, eh?")
+            print("Game ends in a draw!")
+        self.game_over = True
 
     def turn(self):
         """
@@ -247,7 +253,7 @@ class GameRound:
         """
         move_position = None
         if self.player_turn == 1:
-            while move_position is None:
+            while move_position == None:
                 move_position = self.ask_move()
             self.make_move(self.player_one.symbol, *move_position)
         elif self.player_turn == 2:
@@ -260,14 +266,16 @@ class GameRound:
                         break
                 self.board[move_position[0]][move_position[1]] = self.player_two.symbol
             else:
-                while move_position is None:
+                while move_position == None:
                     move_position = self.ask_move()
                 self.make_move(self.player_two.symbol, *move_position)
-        if self.condition_update(*move_position):
-            self.game_end()
+        if self.game_end_check(move_position[0], move_position[1]):
+            self.draw_board()
+            self.game_end(self.player_turn)
         else:
             self.swap_player_turn()
-            self.available_grids.remove(move_position)
+            self.available_grids[move_position[0]][move_position[1]] = False
+
             self.turn_num += 1
             self.draw_board()
 
@@ -286,7 +294,7 @@ class GameRound:
         while answer not in ['Y', 'N']:
             wrong_input_msg = "Invalid input, please input yes with a 'Y' or no with an 'N': "
             answer = input(wrong_input_msg).upper()
-        return True if answer is 'Y' else False
+        return True if answer == 'Y' else False
 
 class IllegalMoveError(Exception):
     """
@@ -332,10 +340,11 @@ def main():
         game.decide_symbols()
         game.draw_board()  # Draws the board
 
-        while game.turn_num <= 9 and game.game_condition == 0:
+        while game.turn_num <= 9 and not(game.game_over):
             game.turn()
 
-        game.game_end()
+        if not(game.game_over):
+            game.game_end(0)
 
         if not game.restart():
             break
