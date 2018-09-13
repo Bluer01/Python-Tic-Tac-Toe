@@ -3,6 +3,7 @@ This is where the game's main logic is kept. It consists of a player class and t
 """
 import random
 import numpy
+import itertools
 
 #TODO: See if you can clean up the decide_symbols function more
 #TODO: Decide whether to make the board and players global or inside the game class
@@ -93,7 +94,7 @@ class GameRound:
         self.player_turn = random.choice([1, 2])
         self.board = [list(' ' for i in range(3)) for j in range(3)]
         self.ai_enabled = self.ai_enable_prompt()
-        self.ai_difficulty = 0
+        self.ai_difficulty = self.ai_difficulty_prompt()
         self.player_one = Player(1)
         if not(self.ai_enabled):
             self.player_two = Player(2)
@@ -124,6 +125,16 @@ class GameRound:
                 return True
             elif ai_answer in ('n', 'no', 'False', '0'):
                 return False
+
+    def ai_difficulty_prompt(self):
+        if self.ai_enabled:
+            while True:
+                difficulty_answer = input("Please choose the AI difficult you would like (0 for easy, 1 for medium, 2 for hard)")
+                if difficulty_answer in ['0', '1', '2']:
+                    self.ai_difficulty = int(difficulty_answer)
+                    break
+        else:
+            self.ai_difficulty = 0
 
     def swap_player_turn(self):
         """
@@ -235,6 +246,68 @@ class GameRound:
             print("Game ends in a draw!")
         self.game_over = True
 
+    def best_move(self, grid):
+        # Joining the grid together into one list
+        board_state = list(itertools.chain.from_iterable(grid))
+
+        # Replacing the available slots with their position
+        def free_positions(board):
+            return [position for position, state in enumerate(board) if state not in ['x', 'o']]
+
+        def winning(player):
+            if ((self.board[0][0] == player and self.board[0][1] == player and self.board[0][2] == player) or
+                (self.board[1][0] == player and self.board[1][1] == player and self.board[1][2] == player) or
+                (self.board[2][0] == player and self.board[2][1] == player and self.board[2][2] == player) or
+                (self.board[0][0] == player and self.board[1][0] == player and self.board[2][0] == player) or
+                (self.board[0][1] == player and self.board[1][1] == player and self.board[2][1] == player) or
+                (self.board[0][2] == player and self.board[1][2] == player and self.board[2][2] == player) or
+                (self.board[0][0] == player and self.board[1][1] == player and self.board[2][2] == player) or
+                (self.board[0][2] == player and self.board[1][1] == player and self.board[2][0] == player)
+                ):
+                return True
+            else:
+                return False
+        
+        def minimax(new_board):
+
+            legal_moves = free_positions(new_board)
+
+            if winning(self.player_one.symbol):
+                return {'score':-10}
+            elif winning(self.player_two.symbol):
+                return {'score':10}
+            elif len(board_state) == 0:
+                return {'score':0}
+
+            moves = []
+
+            for i in legal_moves:
+                move = {}
+                move['index'] = new_board[legal_moves[i]]
+
+                new_board[legal_moves[i]] = self.player_two.symbol
+
+                result = minimax(new_board)
+                move['score'] = result['score']
+
+                new_board[legal_moves[i]] = move['index']
+
+                moves.append(move)
+
+            chosen_move = []
+            best_score = -10000
+            for move in moves:
+                if move['score'] > best_score:
+                    best_score = move['score']
+                    chosen_move = move
+
+            return moves[chosen_move]
+
+        chosen_move = minimax(free_positions(board_state))
+        chosen_x = int(chosen_move / 3)
+        chosen_y = chosen_move % 3
+        return (chosen_x, chosen_y)
+
     def turn(self):
         """
         Contains the logic for a turn in a round. The flow can be summed like so::
@@ -256,25 +329,29 @@ class GameRound:
             while move_position == None:
                 move_position = self.ask_move()
             self.make_move(self.player_one.symbol, *move_position)
+            self.available_grids[move_position[0]][move_position[1]] = self.player_one.symbol
         elif self.player_turn == 2:
             if self.ai_enabled:
-                #TODO: This bit
                 print("AI turn: \n")
-                while True:
-                    move_position = [random.choice([0, 1, 2]), random.choice([0, 1, 2])]
-                    if self.is_free(*move_position):
-                        break
+                if self.ai_difficulty == 0:
+                    while True:
+                        move_position = [random.choice([0, 1, 2]), random.choice([0, 1, 2])]
+                        if self.is_free(*move_position):
+                            break
+                else:
+                    move_position = self.best_move(self.available_grids)
                 self.board[move_position[0]][move_position[1]] = self.player_two.symbol
+                self.available_grids[move_position[0]][move_position[1]] = self.player_two.symbol
             else:
                 while move_position == None:
                     move_position = self.ask_move()
                 self.make_move(self.player_two.symbol, *move_position)
+                self.available_grids[move_position[0]][move_position[1]] = self.player_two.symbol
         if self.game_end_check(move_position[0], move_position[1]):
             self.draw_board()
             self.game_end(self.player_turn)
         else:
             self.swap_player_turn()
-            self.available_grids[move_position[0]][move_position[1]] = False
 
             self.turn_num += 1
             self.draw_board()
