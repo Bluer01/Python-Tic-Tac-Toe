@@ -87,7 +87,7 @@ class GameRound:
         Used to store the players, which I keep to use an index over for setting the player turn
     """
     def __init__(self):
-        self.available_grids = [list(True for i in range(3)) for j in range(3)]
+        self.available_grids = [[0, 1, 2],[3, 4, 5], [6, 7, 8]]
         self.turn_num = 1
         self.game_over = False
         # First definition is random, then is later defined through player
@@ -113,7 +113,7 @@ class GameRound:
 
     def is_free(self, chosen_x, chosen_y):
         """Checks if a grid on the board is free"""
-        if self.available_grids[chosen_x-1][chosen_y-1]:
+        if self.available_grids[chosen_x-1][chosen_y-1] not in ['x', 'o']:
             return True
         return False
 
@@ -253,8 +253,8 @@ class GameRound:
         # Replacing the available slots with their position
         def free_positions(board):
             return [position for position, state in enumerate(board) if state not in ['x', 'o']]
-
-        def winning(player):
+        
+        def winning(board, player):
             if ((self.board[0][0] == player and self.board[0][1] == player and self.board[0][2] == player) or
                 (self.board[1][0] == player and self.board[1][1] == player and self.board[1][2] == player) or
                 (self.board[2][0] == player and self.board[2][1] == player and self.board[2][2] == player) or
@@ -268,44 +268,57 @@ class GameRound:
             else:
                 return False
         
-        def minimax(new_board):
+        def minimax(new_board, player):
 
             legal_moves = free_positions(new_board)
 
-            if winning(self.player_one.symbol):
+            if winning(new_board, self.player_one.symbol):
                 return {'score':-10}
-            elif winning(self.player_two.symbol):
+            elif winning(new_board, self.player_two.symbol):
                 return {'score':10}
-            elif len(board_state) == 0:
+            elif len(legal_moves) == 0:
                 return {'score':0}
 
             moves = []
 
-            for i in legal_moves:
+            for i in range(len(legal_moves)):
                 move = {}
                 move['index'] = new_board[legal_moves[i]]
 
-                new_board[legal_moves[i]] = self.player_two.symbol
+                new_board[legal_moves[i]] = player
 
-                result = minimax(new_board)
-                move['score'] = result['score']
+                if player == self.player_two.symbol:
+                    result = minimax(new_board, self.player_one.symbol)
+                    move['score'] = result['score']
+                else:
+                    result = minimax(new_board, self.player_two.symbol)
+                    move['score'] = result['score']
 
                 new_board[legal_moves[i]] = move['index']
 
                 moves.append(move)
 
-            chosen_move = []
-            best_score = -10000
-            for move in moves:
-                if move['score'] > best_score:
-                    best_score = move['score']
-                    chosen_move = move
+            chosen_move = 0
+            if player == self.player_two.symbol:
+                best_score = -10000
+                for i in range(len(moves)):
+                    if moves[i]['score'] > best_score:
+                        best_score = moves[i]['score']
+                        chosen_move = i
+            else:
+                best_score = 10000
+                for i in range(len(moves)):
+                    if moves[i]['score'] < best_score:
+                        best_score = moves[i]['score']
+                        chosen_move = i
 
             return moves[chosen_move]
 
-        chosen_move = minimax(free_positions(board_state))
+        chosen_move = minimax(board_state, self.player_two.symbol)['index']
+        print(f"chosen_move is {chosen_move}")
         chosen_x = int(chosen_move / 3)
         chosen_y = chosen_move % 3
+        print(f"interpreted chosen move is [{chosen_x}, {chosen_y}]")
         return (chosen_x, chosen_y)
 
     def turn(self):
