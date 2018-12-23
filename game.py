@@ -94,7 +94,7 @@ class GameRound:
         self.player_turn = random.choice([1, 2])
         self.board = [list(' ' for i in range(3)) for j in range(3)]
         self.ai_enabled = self.ai_enable_prompt()
-        self.ai_difficulty = self.ai_difficulty_prompt()
+        self.ai_difficulty_prompt()
         self.player_one = Player(1)
         if not(self.ai_enabled):
             self.player_two = Player(2)
@@ -125,11 +125,14 @@ class GameRound:
                 return True
             elif ai_answer in ('n', 'no', 'False', '0'):
                 return False
+            else:
+                print("That's not a 'y' or an 'n'; please try again. \n")
 
     def ai_difficulty_prompt(self):
         if self.ai_enabled:
             while True:
-                difficulty_answer = input("Please choose the AI difficult you would like (0 for easy, 1 for medium, 2 for hard)")
+                difficulty_answer = input(("Please choose the AI difficult you would like (0 for challenged"
+                                            ", 1 for challenging, 2 for unbeatable): "))
                 if difficulty_answer in ['0', '1', '2']:
                     self.ai_difficulty = int(difficulty_answer)
                     break
@@ -160,7 +163,7 @@ class GameRound:
                 self.player_two.symbol = 'o'
             print(f"{self.player_one.name} chose '{self.player_one.symbol}'")
             print(f"{self.player_two.name} is '{self.player_two.symbol}'")
-        else:        
+        else:
             if not(self.ai_enabled):
                 self.player_two.symbol_prompt()
                 if self.player_two.symbol == 'o':
@@ -182,10 +185,6 @@ class GameRound:
         Asks the player for their move choice (asks for row and column the combines them)
          and then returns them
 
-        Raises
-        ------
-        IllegalMoveError
-            If the move can't be legally made, it raises this exception
 
         Returns
         -------
@@ -198,7 +197,7 @@ class GameRound:
             row_prompt = "Please provide legal row (1 (top), 2 (middle), 3 (bottom)): "
             move_row = int(input(row_prompt))
 
-        col_prompt = "Please choose column 1(left), 2(middle) or 3(right) for your move: "
+        col_prompt = "Please choose column 1 (left), 2 (middle) or 3 (right) for your move: "
         move_col = int(input(col_prompt))
         while move_col not in range(1, 4):
             col_prompt = "Please choose legal column (1 (left), 2 (middle), 3 (right)): "
@@ -207,16 +206,16 @@ class GameRound:
         move_position = (move_row-1, move_col-1)
 
         if not self.is_free(move_row, move_col):
-            error_msg = "Grid already taken; please try again with a different grid.\n"
-            raise IllegalMoveError(error_msg)
+            print("Grid already taken; please try again with a different grid.\n")
+            return None
         return move_position
 
     def game_end_check(self, x, y):
-        #check if previous move caused a win on vertical line 
+        #check if previous move caused a win on vertical line
         if self.board[0][y] == self.board[1][y] == self.board [2][y]:
             return True
 
-        #check if previous move caused a win on horizontal line 
+        #check if previous move caused a win on horizontal line
         if self.board[x][0] == self.board[x][1] == self.board [x][2]:
             return True
 
@@ -228,9 +227,9 @@ class GameRound:
         if x + y == 2 and self.board[0][2] == self.board[1][1] == self.board [2][0]:
             return True
 
-        return False          
+        return False
 
-    
+
     def game_end(self, winner):
         if winner == 1:
             if self.ai_enabled:
@@ -253,28 +252,28 @@ class GameRound:
         # Replacing the available slots with their position
         def free_positions(board):
             return [position for position, state in enumerate(board) if state not in ['x', 'o']]
-        
-        def winning(board, player):
-            if ((self.board[0][0] == player and self.board[0][1] == player and self.board[0][2] == player) or
-                (self.board[1][0] == player and self.board[1][1] == player and self.board[1][2] == player) or
-                (self.board[2][0] == player and self.board[2][1] == player and self.board[2][2] == player) or
-                (self.board[0][0] == player and self.board[1][0] == player and self.board[2][0] == player) or
-                (self.board[0][1] == player and self.board[1][1] == player and self.board[2][1] == player) or
-                (self.board[0][2] == player and self.board[1][2] == player and self.board[2][2] == player) or
-                (self.board[0][0] == player and self.board[1][1] == player and self.board[2][2] == player) or
-                (self.board[0][2] == player and self.board[1][1] == player and self.board[2][0] == player)
+
+        def winning_state(board, player):
+            if ((board[0] == player and board[1] == player and board[2] == player) or
+                (board[3] == player and board[4] == player and board[5] == player) or
+                (board[6] == player and board[7] == player and board[8] == player) or
+                (board[0] == player and board[3] == player and board[6] == player) or
+                (board[1] == player and board[4] == player and board[7] == player) or
+                (board[2] == player and board[5] == player and board[8] == player) or
+                (board[0] == player and board[4] == player and board[8] == player) or
+                (board[2] == player and board[4] == player and board[6] == player)
                 ):
                 return True
             else:
                 return False
-        
+
         def minimax(new_board, player):
 
             legal_moves = free_positions(new_board)
 
-            if winning(new_board, self.player_one.symbol):
+            if winning_state(new_board, self.player_one.symbol):
                 return {'score':-10}
-            elif winning(new_board, self.player_two.symbol):
+            elif winning_state(new_board, self.player_two.symbol):
                 return {'score':10}
             elif len(legal_moves) == 0:
                 return {'score':0}
@@ -315,10 +314,8 @@ class GameRound:
             return moves[chosen_move]
 
         chosen_move = minimax(board_state, self.player_two.symbol)['index']
-        print(f"chosen_move is {chosen_move}")
         chosen_x = int(chosen_move / 3)
         chosen_y = chosen_move % 3
-        print(f"interpreted chosen move is [{chosen_x}, {chosen_y}]")
         return (chosen_x, chosen_y)
 
     def turn(self):
@@ -351,8 +348,19 @@ class GameRound:
                         move_position = [random.choice([0, 1, 2]), random.choice([0, 1, 2])]
                         if self.is_free(*move_position):
                             break
+                elif self.ai_difficulty == 1:
+                    if self.turn_num in (1, 2):
+                        while True:
+                            move_position = (random.choice([0, 1, 2]), random.choice([0, 1, 2]))
+                            if self.is_free(move_position[0]+1, move_position[1]+1):
+                                break
+                    else:
+                            move_position = self.best_move(self.available_grids)
                 else:
-                    move_position = self.best_move(self.available_grids)
+                    if self.turn_num == 1:
+                        move_position = [0, 0]
+                    else:
+                        move_position = self.best_move(self.available_grids)
                 self.board[move_position[0]][move_position[1]] = self.player_two.symbol
                 self.available_grids[move_position[0]][move_position[1]] = self.player_two.symbol
             else:
