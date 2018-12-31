@@ -5,9 +5,6 @@ import random
 import numpy
 import itertools
 
-#TODO: See if you can clean up the decide_symbols function more
-#TODO: Decide whether to make the board and players global or inside the game class
-#TODO: Consider turning the one-line functions into lambdas
 
 class Player:
     """
@@ -96,10 +93,12 @@ class GameRound:
         self.ai_enabled = self.ai_enable_prompt()
         self.ai_difficulty_prompt()
         self.player_one = Player(1)
+
         if not(self.ai_enabled):
             self.player_two = Player(2)
         else:
             self.player_two = Player(2, True)
+
         self.players = (self.player_one, self.player_two)
 
     def draw_board(self):
@@ -161,6 +160,7 @@ class GameRound:
                 self.player_two.symbol = 'x'
             else:
                 self.player_two.symbol = 'o'
+
             print(f"{self.player_one.name} chose '{self.player_one.symbol}'")
             print(f"{self.player_two.name} is '{self.player_two.symbol}'")
         else:
@@ -176,6 +176,7 @@ class GameRound:
                     self.player_two.symbol = 'x'
                 else:
                     self.player_two.symbol = 'o'
+
             print(f"{self.player_one.name} will go second; your symbol is '{self.player_one.symbol}'")
             print(f"{self.player_two.name} is '{self.player_two.symbol}'")
 
@@ -228,7 +229,6 @@ class GameRound:
             return True
 
         return False
-
 
     def game_end(self, winner):
         if winner == 1:
@@ -316,6 +316,7 @@ class GameRound:
         chosen_move = minimax(board_state, self.player_two.symbol)['index']
         chosen_x = int(chosen_move / 3)
         chosen_y = chosen_move % 3
+
         return (chosen_x, chosen_y)
 
     def turn(self):
@@ -335,19 +336,24 @@ class GameRound:
             draw the board
         """
         move_position = None
+
         if self.player_turn == 1:
             while move_position == None:
                 move_position = self.ask_move()
+
             self.make_move(self.player_one.symbol, *move_position)
             self.available_grids[move_position[0]][move_position[1]] = self.player_one.symbol
+
         elif self.player_turn == 2:
             if self.ai_enabled:
                 print("AI turn: \n")
+
                 if self.ai_difficulty == 0:
                     while True:
                         move_position = [random.choice([0, 1, 2]), random.choice([0, 1, 2])]
                         if self.is_free(*move_position):
                             break
+
                 elif self.ai_difficulty == 1:
                     if self.turn_num in (1, 2):
                         while True:
@@ -358,26 +364,28 @@ class GameRound:
                             move_position = self.best_move(self.available_grids)
                 else:
                     if self.turn_num == 1:
+                        ''' Noticed the algorithm always started with this move,
+                            so it made sense to speed it up by putting it in anyway'''
                         move_position = [0, 0]
                     else:
                         move_position = self.best_move(self.available_grids)
+
                 self.board[move_position[0]][move_position[1]] = self.player_two.symbol
                 self.available_grids[move_position[0]][move_position[1]] = self.player_two.symbol
             else:
                 while move_position == None:
                     move_position = self.ask_move()
+
                 self.make_move(self.player_two.symbol, *move_position)
                 self.available_grids[move_position[0]][move_position[1]] = self.player_two.symbol
+
         if self.game_end_check(move_position[0], move_position[1]):
             self.draw_board()
             self.game_end(self.player_turn)
         else:
             self.swap_player_turn()
-
             self.turn_num += 1
             self.draw_board()
-
-
 
     def restart(self):
         """
@@ -392,14 +400,9 @@ class GameRound:
         while answer not in ['Y', 'N']:
             wrong_input_msg = "Invalid input, please input yes with a 'Y' or no with an 'N': "
             answer = input(wrong_input_msg).upper()
+
         return True if answer == 'Y' else False
 
-class IllegalMoveError(Exception):
-    """
-    Meant to be called for if a move isn't legal on the board. Merely passes, but is then dealt
-    with logically where necessary
-    """
-    pass
 
 def main():
     """
